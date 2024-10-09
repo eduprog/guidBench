@@ -1,6 +1,13 @@
-﻿using System.Security.Cryptography;
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Columns;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Loggers;
+using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+using System.Globalization;
+using System.Security.Cryptography;
 
 BenchmarkRunner.Run<GuidBenchmark>();
 
@@ -81,6 +88,8 @@ static class GuidExtensions
     }
 }
 
+[MemoryDiagnoser] // Adiciona diagnóstico de memória
+[RankColumn] // Classifica os métodos por desempenho
 public class GuidBenchmark
 {
     [Benchmark]
@@ -105,5 +114,27 @@ public class GuidBenchmark
     public Guid NewUlid()
     {
         return Ulid.NewUlid().ToGuid();
+    }
+}
+public class CustomConfig : ManualConfig
+{
+    public CustomConfig()
+    {
+        AddLogger(ConsoleLogger.Default);  // Adiciona o logger padrão para exibir o progresso no console
+        AddColumn(StatisticColumn.Mean);  // Exibe a média do tempo gasto
+        AddColumn(StatisticColumn.StdDev); // Exibe o desvio padrão
+        AddColumn(StatisticColumn.Error);  // Exibe o erro padrão
+        AddColumn(RankColumn.Arabic);      // Exibe a classificação
+        AddDiagnoser(MemoryDiagnoser.Default);  // Diagnóstico de uso de memória
+
+        // Configuração da cultura para pt-BR
+        CultureInfo ptBR = new CultureInfo("pt-BR");
+        SummaryStyle style = SummaryStyle.Default.WithCultureInfo(ptBR);
+        SummaryStyle = style;
+
+        AddJob(Job.Default
+            .WithWarmupCount(3)            // Número de execuções de warmup
+            .WithIterationCount(10)        // Número de iterações
+            .WithLaunchCount(1));          // Número de lançamentos
     }
 }
